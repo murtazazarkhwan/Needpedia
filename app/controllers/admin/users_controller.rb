@@ -1,5 +1,11 @@
 module Admin
   class UsersController < Admin::ApplicationController
+
+    def update
+      params[:user].delete(:password) if params[:user][:password].blank?
+      super
+    end
+
     def bulk_delete
       user_ids = params[:user_ids]
       return unless user_ids.present?
@@ -29,7 +35,7 @@ module Admin
 
     def scoped_resource
       if params[:unconfirmed] == 'true'
-        resource_class.where(confirmed_at: nil)
+        resource_class.where(confirmed_at: nil, approved: false)
       else
         resource_class
       end

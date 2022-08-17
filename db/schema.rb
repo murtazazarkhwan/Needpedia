@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_24_180123) do
+ActiveRecord::Schema.define(version: 2022_04_03_063517) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -92,6 +92,14 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
     t.index ["user_id"], name: "index_answers_on_user_id"
   end
 
+  create_table "blocked_users", force: :cascade do |t|
+    t.bigint "user_id"
+    t.integer "block_user_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_blocked_users_on_user_id"
+  end
+
   create_table "comments", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "commentable_id"
@@ -134,6 +142,39 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
     t.text "answer"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "feedback_question_options", force: :cascade do |t|
+    t.text "body"
+    t.bigint "feedback_question_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["feedback_question_id"], name: "index_feedback_question_options_on_feedback_question_id"
+  end
+
+  create_table "feedback_questions", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "feedback_responses", force: :cascade do |t|
+    t.bigint "feedback_id"
+    t.bigint "feedback_question_id"
+    t.bigint "feedback_question_option_id"
+    t.text "comment"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["feedback_id"], name: "index_feedback_responses_on_feedback_id"
+    t.index ["feedback_question_id"], name: "index_feedback_responses_on_feedback_question_id"
+    t.index ["feedback_question_option_id"], name: "index_feedback_responses_on_feedback_question_option_id"
+  end
+
+  create_table "feedbacks", force: :cascade do |t|
+    t.bigint "user_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_feedbacks_on_user_id"
   end
 
   create_table "flags", force: :cascade do |t|
@@ -202,6 +243,17 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
     t.integer "receiver_id"
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["user_id"], name: "index_messages_on_user_id"
+  end
+
+  create_table "notification_settings", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.integer "post_id"
+    t.boolean "edit_post"
+    t.boolean "expert_layer"
+    t.boolean "related_wiki_post"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_id"], name: "index_notification_settings_on_user_id"
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -293,6 +345,15 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["user_id"], name: "index_services_on_user_id"
+  end
+
+  create_table "settings", force: :cascade do |t|
+    t.boolean "freeze_accounts_activity", default: false
+    t.boolean "freeze_posts_activity", default: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.boolean "active_nuclear_note", default: false
+    t.text "nuclear_note"
   end
 
   create_table "shares", force: :cascade do |t|
@@ -436,6 +497,8 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
     t.datetime "daily_notification_time"
     t.boolean "all_notifications", default: false
     t.datetime "daily_report_sent_at"
+    t.boolean "master_admin", default: false
+    t.boolean "approved", default: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -445,11 +508,13 @@ ActiveRecord::Schema.define(version: 2021_11_24_180123) do
   add_foreign_key "answers", "questions"
   add_foreign_key "answers", "users"
   add_foreign_key "comments", "users"
+  add_foreign_key "feedback_question_options", "feedback_questions"
   add_foreign_key "flags", "users"
   add_foreign_key "gigs", "users"
   add_foreign_key "likes", "users"
   add_foreign_key "messages", "conversations"
   add_foreign_key "messages", "users"
+  add_foreign_key "notification_settings", "users"
   add_foreign_key "post_tokens", "posts"
   add_foreign_key "post_tokens", "users"
   add_foreign_key "posts", "users"

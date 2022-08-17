@@ -1,13 +1,14 @@
 require 'sidekiq/web'
+require 'sidekiq/cron/web'
 
 Rails.application.routes.draw do
   mount LetterOpenerWeb::Engine, at: '/letter_opener' if Rails.env.development?
   get 'how_tos/index'
   post '/rate' => 'rater#create', :as => 'rate'
-  namespace :admin do
+  namespace :master_admin do
+    resources :settings
     resources :preformatted_messages
     resources :how_tos
-    resources :answers
     resources :questions
     resources :questionnaires
     resources :faqs
@@ -21,6 +22,9 @@ Rails.application.routes.draw do
     # resources :likes
     resources :comments
     resources :gigs
+    resources :answers do
+      get 'approve_user'
+    end
     resources :posts do
       collection do
         get 'private_posts'
@@ -35,10 +39,41 @@ Rails.application.routes.draw do
     end
     resources :announcements
     resources :notifications
+    resources :feedbacks
     # resources :services
 
     root to: "users#index"
   end
+
+  namespace :admin do
+    resources :post_tokens
+    resources :token_ans_debates
+    resources :connections
+    resources :user_gigs
+    resources :flags
+    resources :comments
+    resources :gigs
+    resources :answers do
+      get 'approve_user'
+    end
+    resources :posts do
+      collection do
+        get 'private_posts'
+      end
+    end
+    resources :users do
+      collection do
+        delete 'bulk_delete'
+        get 'send_confirmation_link'
+        get 'unconfirmed_users'
+      end
+    end
+    resources :notifications
+    resources :feedbacks
+
+    root to: "users#index"
+  end
+  get '/nuclear_note', to: 'nuclear_note#index'
   get '/privacy', to: 'home#privacy'
   get '/time_bank', to: 'home#time_bank'
   get '/terms', to: 'home#terms'
@@ -67,9 +102,11 @@ Rails.application.routes.draw do
   patch '/change_rating', to: 'ratings#change_rating'
   get 'connections' => 'profile#my_connections'
   get 'friend_request' => 'profile#friend_request'
+  post 'block_user' => 'profile#block_user'
+  delete 'unblock_user' => 'profile#unblock_user'
   delete 'un_friend/:uuid' => 'profile#un_friend', as: 'un_friend'
   get 'tags/:tag' => 'posts#index', as: :tag
-  authenticate :user, lambda {|u| u.admin?} do
+  authenticate :user, lambda {|u| u.admin? || u.master_admin? } do
     mount Sidekiq::Web => '/sidekiq'
   end
 
@@ -170,6 +207,8 @@ Rails.application.routes.draw do
   resources :messages do
     patch 'read'
   end
+
+  resources :feedbacks, only: [:new, :create]
 
   # resources :profiles do
   #   member do
